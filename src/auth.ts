@@ -60,10 +60,20 @@ class OAuthAuthenticator {
   }
 }
 
-function createAuthenticator(type: string, tenantId?: string): () => Promise<string> {
+function createAuthenticator(type: string, tenantId?: string, isOnPremises?: boolean): () => Promise<string> {
   switch (type) {
+    case "pat":
+      // Personal Access Token authentication (recommended for on-premises)
+      return async () => {
+        const token = process.env["ADO_PAT"];
+        if (!token) {
+          throw new Error("Environment variable 'ADO_PAT' is not set or empty. Please set it with a valid Azure DevOps Personal Access Token.");
+        }
+        return token;
+      };
+
     case "envvar":
-      // Read token from fixed environment variable
+      // Read token from fixed environment variable (legacy support)
       return async () => {
         const token = process.env["ADO_MCP_AUTH_TOKEN"];
         if (!token) {
@@ -74,6 +84,9 @@ function createAuthenticator(type: string, tenantId?: string): () => Promise<str
 
     case "azcli":
     case "env":
+      if (isOnPremises) {
+        throw new Error("Azure CLI and Default Azure Credential authentication are not supported for on-premises installations. Please use 'pat' or 'envvar' authentication.");
+      }
       if (type !== "env") {
         process.env.AZURE_TOKEN_CREDENTIALS = "dev";
       }
@@ -92,6 +105,9 @@ function createAuthenticator(type: string, tenantId?: string): () => Promise<str
       };
 
     default:
+      if (isOnPremises) {
+        throw new Error("Interactive OAuth authentication is not supported for on-premises installations. Please use 'pat' or 'envvar' authentication.");
+      }
       const authenticator = new OAuthAuthenticator(tenantId);
       return () => {
         return authenticator.getToken();

@@ -30,7 +30,7 @@ const argv = yargs(hideBin(process.argv))
   .version(packageVersion)
   .command("$0 <organization> [options]", "Azure DevOps MCP Server", (yargs) => {
     yargs.positional("organization", {
-      describe: "Azure DevOps organization name",
+      describe: "Azure DevOps organization name (or collection name for on-premises)",
       type: "string",
       demandOption: true,
     });
@@ -46,7 +46,7 @@ const argv = yargs(hideBin(process.argv))
     alias: "a",
     describe: "Type of authentication to use",
     type: "string",
-    choices: ["interactive", "azcli", "env", "envvar"],
+    choices: ["interactive", "azcli", "env", "envvar", "pat"],
     default: defaultAuthenticationType,
   })
   .option("tenant", {
@@ -54,11 +54,21 @@ const argv = yargs(hideBin(process.argv))
     describe: "Azure tenant ID (optional, applied when using 'interactive' and 'azcli' type of authentication)",
     type: "string",
   })
+  .option("server-url", {
+    alias: "s",
+    describe: "Custom Azure DevOps Server URL (for on-premises installations, e.g., 'https://tfs.example.com:8080/tfs')",
+    type: "string",
+  })
   .help()
   .parseSync();
 
 export const orgName = argv.organization as string;
-const orgUrl = "https://dev.azure.com/" + orgName;
+
+// Determine if this is an on-premises installation
+const isOnPremises = !!argv["server-url"];
+
+// Build the organization URL
+const orgUrl = isOnPremises ? `${argv["server-url"]}/${orgName}` : `https://dev.azure.com/${orgName}`;
 
 const domainsManager = new DomainsManager(argv.domains);
 export const enabledDomains = domainsManager.getEnabledDomains();
@@ -91,8 +101,10 @@ async function main() {
   server.server.oninitialized = () => {
     userAgentComposer.appendMcpClientInfo(server.server.getClientVersion());
   };
-  const tenantId = (await getOrgTenant(orgName)) ?? argv.tenant;
-  const authenticator = createAuthenticator(argv.authentication, tenantId);
+
+  // Skip tenant lookup for on-premises installations
+  const tenantId = isOnPremises ? argv.tenant : ((await getOrgTenant(orgName)) ?? argv.tenant);
+  const authenticator = createAuthenticator(argv.authentication, tenantId, isOnPremises);
 
   // removing prompts untill further notice
   // configurePrompts(server);
