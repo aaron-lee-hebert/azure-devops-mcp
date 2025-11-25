@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-export const apiVersion = "7.2-preview.1";
+export const apiVersion = "6.0";
 export const batchApiVersion = "5.0";
-export const markdownCommentsApiVersion = "7.2-preview.4";
+export const markdownCommentsApiVersion = "6.0";
 
 export function createEnumMapping<T extends Record<string, string | number>>(enumObject: T): Record<string, T[keyof T]> {
   const mapping: Record<string, T[keyof T]> = {};
@@ -71,4 +71,15 @@ export function encodeFormattedValue(value: string, format?: "Markdown" | "Html"
   if (!value || format !== "Markdown") return value;
   const result = value.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   return result;
+}
+
+/**
+ * Creates a Basic Authorization header value for PAT authentication.
+ * Azure DevOps Server requires Basic auth with format: Basic base64(:<PAT>)
+ * @param token The Personal Access Token
+ * @returns The Authorization header value
+ */
+export function createBasicAuthHeader(token: string): string {
+  const base64Token = Buffer.from(`:${token}`).toString("base64");
+  return `Basic ${base64Token}`;
 }

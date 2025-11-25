@@ -739,7 +739,7 @@ describe("configureWorkItemTools", () => {
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
-            "Authorization": "Bearer fake-token",
+            "Authorization": "Basic fake-pat",
             "Content-Type": "application/json",
           }),
         })
@@ -780,7 +780,7 @@ describe("configureWorkItemTools", () => {
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
-            "Authorization": "Bearer fake-token",
+                "Authorization": "Basic fake-pat",
             "Content-Type": "application/json",
           }),
         })
@@ -1578,7 +1578,7 @@ describe("configureWorkItemTools", () => {
         expect.objectContaining({
           method: "PATCH",
           headers: expect.objectContaining({
-            "Authorization": "Bearer fake-token",
+            "Authorization": "Basic fake-pat",
             "Content-Type": "application/json",
           }),
           body: JSON.stringify(expectedBody),
@@ -1648,7 +1648,7 @@ describe("configureWorkItemTools", () => {
         expect.objectContaining({
           method: "PATCH",
           headers: expect.objectContaining({
-            "Authorization": "Bearer fake-token",
+            "Authorization": "Basic fake-pat",
             "Content-Type": "application/json",
           }),
           body: JSON.stringify(expectedBody),
@@ -1726,7 +1726,7 @@ describe("configureWorkItemTools", () => {
         expect.objectContaining({
           method: "PATCH",
           headers: expect.objectContaining({
-            "Authorization": "Bearer fake-token",
+            "Authorization": "Basic fake-pat",
             "Content-Type": "application/json",
           }),
         })
@@ -2352,7 +2352,7 @@ describe("configureWorkItemTools", () => {
         expect.objectContaining({
           method: "PATCH",
           headers: expect.objectContaining({
-            "Authorization": "Bearer fake-token",
+            "Authorization": "Basic fake-pat",
             "Content-Type": "application/json",
           }),
           body: expect.stringContaining("TestProject\\\\Area1"),

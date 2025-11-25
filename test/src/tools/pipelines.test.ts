@@ -73,7 +73,7 @@ describe("configurePipelineTools", () => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer mock-token",
+          "Authorization": "Basic mock-pat",
           "User-Agent": "Jest",
         },
         body: JSON.stringify({
@@ -116,7 +116,7 @@ describe("configurePipelineTools", () => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer mock-token",
+          "Authorization": "Basic Om1vY2stdG9rZW4=",
           "User-Agent": "Jest",
         },
         body: JSON.stringify({
@@ -153,7 +153,7 @@ describe("configurePipelineTools", () => {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer mock-token",
+          "Authorization": "Basic Om1vY2stdG9rZW4=",
           "User-Agent": "Jest",
         },
         body: JSON.stringify({

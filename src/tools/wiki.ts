@@ -5,7 +5,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebApi } from "azure-devops-node-api";
 import { z } from "zod";
 import { WikiPagesBatchRequest } from "azure-devops-node-api/interfaces/WikiInterfaces.js";
-import { apiVersion } from "../utils.js";
+import { apiVersion, createBasicAuthHeader } from "../utils.js";
 
 const WIKI_TOOLS = {
   list_wikis: "wiki_list_wikis",
@@ -155,7 +155,7 @@ function configureWikiTools(server: McpServer, tokenProvider: () => Promise<stri
 
         const response = await fetch(url, {
           headers: {
-            "Authorization": `Bearer ${accessToken}`,
+            "Authorization": createBasicAuthHeader(accessToken),
             "User-Agent": userAgentProvider(),
           },
         });
@@ -235,7 +235,7 @@ function configureWikiTools(server: McpServer, tokenProvider: () => Promise<stri
               const restUrl = `${baseUrl}/${resolvedProject}/_apis/wiki/wikis/${resolvedWiki}/pages/${parsed.pageId}?includeContent=true&api-version=7.1`;
               const resp = await fetch(restUrl, {
                 headers: {
-                  "Authorization": `Bearer ${accessToken}`,
+                  "Authorization": createBasicAuthHeader(accessToken),
                   "User-Agent": userAgentProvider(),
                 },
               });
@@ -309,7 +309,7 @@ function configureWikiTools(server: McpServer, tokenProvider: () => Promise<stri
           const createResponse = await fetch(url, {
             method: "PUT",
             headers: {
-              "Authorization": `Bearer ${accessToken}`,
+              "Authorization": createBasicAuthHeader(accessToken),
               "Content-Type": "application/json",
               "User-Agent": userAgentProvider(),
             },
@@ -338,7 +338,7 @@ function configureWikiTools(server: McpServer, tokenProvider: () => Promise<stri
               const getResponse = await fetch(url, {
                 method: "GET",
                 headers: {
-                  "Authorization": `Bearer ${accessToken}`,
+                  "Authorization": createBasicAuthHeader(accessToken),
                   "User-Agent": userAgentProvider(),
                 },
               });
@@ -360,7 +360,7 @@ function configureWikiTools(server: McpServer, tokenProvider: () => Promise<stri
             const updateResponse = await fetch(url, {
               method: "PUT",
               headers: {
-                "Authorization": `Bearer ${accessToken}`,
+                "Authorization": createBasicAuthHeader(accessToken),
                 "Content-Type": "application/json",
                 "User-Agent": userAgentProvider(),
                 "If-Match": currentEtag,

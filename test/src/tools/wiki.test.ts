@@ -377,7 +377,7 @@ describe("configureWikiTools", () => {
         "https://dev.azure.com/testorg/proj1/_apis/wiki/wikis/wiki1/pages?path=%2FHome&api-version=7.2-preview.1",
         expect.objectContaining({
           headers: expect.objectContaining({
-            "Authorization": "Bearer test-token",
+            "Authorization": "Basic fake-pat",
             "User-Agent": "Jest",
           }),
         })
@@ -903,7 +903,7 @@ describe("configureWikiTools", () => {
         {
           method: "PUT",
           headers: {
-            "Authorization": "Bearer test-token",
+            "Authorization": "Basic fake-pat",
             "Content-Type": "application/json",
             "User-Agent": "Jest",
           },
@@ -1185,7 +1185,7 @@ describe("configureWikiTools", () => {
       expect(mockFetch).toHaveBeenNthCalledWith(2, expect.stringContaining("pages?path="), {
         method: "PUT",
         headers: {
-          "Authorization": "Bearer test-token",
+          "Authorization": "Basic fake-pat",
           "Content-Type": "application/json",
           "If-Match": 'W/"provided-etag"',
           "User-Agent": "Jest",
@@ -1429,7 +1429,7 @@ describe("configureWikiTools", () => {
         {
           method: "PUT",
           headers: {
-            "Authorization": "Bearer test-token",
+            "Authorization": "Basic fake-pat",
             "Content-Type": "application/json",
             "User-Agent": "Jest",
           },

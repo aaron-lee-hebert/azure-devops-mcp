@@ -1,73 +1,22 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { AzureCliCredential, ChainedTokenCredential, DefaultAzureCredential, TokenCredential } from "@azure/identity";
-import { AccountInfo, AuthenticationResult, PublicClientApplication } from "@azure/msal-node";
-import open from "open";
-
-const scopes = ["499b84ac-1321-427f-aa17-267ca6975798/.default"];
-
-class OAuthAuthenticator {
-  static clientId = "0d50963b-7bb9-4fe7-94c7-a99af00b5136";
-  static defaultAuthority = "https://login.microsoftonline.com/common";
-  static zeroTenantId = "00000000-0000-0000-0000-000000000000";
-
-  private accountId: AccountInfo | null;
-  private publicClientApp: PublicClientApplication;
-
-  constructor(tenantId?: string) {
-    this.accountId = null;
-
-    let authority = OAuthAuthenticator.defaultAuthority;
-    if (tenantId && tenantId !== OAuthAuthenticator.zeroTenantId) {
-      authority = `https://login.microsoftonline.com/${tenantId}`;
-    }
-
-    this.publicClientApp = new PublicClientApplication({
-      auth: {
-        clientId: OAuthAuthenticator.clientId,
-        authority,
-      },
-    });
-  }
-
-  public async getToken(): Promise<string> {
-    let authResult: AuthenticationResult | null = null;
-    if (this.accountId) {
-      try {
-        authResult = await this.publicClientApp.acquireTokenSilent({
-          scopes,
-          account: this.accountId,
-        });
-      } catch {
-        authResult = null;
-      }
-    }
-    if (!authResult) {
-      authResult = await this.publicClientApp.acquireTokenInteractive({
-        scopes,
-        openBrowser: async (url) => {
-          open(url);
-        },
-      });
-      this.accountId = authResult.account;
-    }
-
-    if (!authResult.accessToken) {
-      throw new Error("Failed to obtain Azure DevOps OAuth token.");
-    }
-    return authResult.accessToken;
-  }
-}
-
-function createAuthenticator(type: string, tenantId?: string, isOnPremises?: boolean): () => Promise<string> {
+/**
+ * Creates an authenticator function for Azure DevOps Server.
+ * Supports PAT (Personal Access Token) authentication.
+ *
+ * @param type - The authentication type: 'pat' (default) or 'envvar' (legacy)
+ * @returns A function that returns a Promise resolving to the authentication token
+ */
+function createAuthenticator(type: string, cliPat?: string): () => Promise<string> {
   switch (type) {
     case "pat":
-      // Personal Access Token authentication (recommended for on-premises)
+      // Personal Access Token authentication (recommended)
+      // Priority: CLI argument > environment variables
       return async () => {
-        const token = process.env["ADO_PAT"];
+        const token = cliPat || process.env["AZURE_DEVOPS_PAT"];
         if (!token) {
-          throw new Error("Environment variable 'ADO_PAT' is not set or empty. Please set it with a valid Azure DevOps Personal Access Token.");
+          throw new Error("Personal Access Token not found. Provide via --pat argument or set AZURE_DEVOPS_PAT environment variable.");
         }
         return token;
       };
@@ -82,36 +31,9 @@ function createAuthenticator(type: string, tenantId?: string, isOnPremises?: boo
         return token;
       };
 
-    case "azcli":
-    case "env":
-      if (isOnPremises) {
-        throw new Error("Azure CLI and Default Azure Credential authentication are not supported for on-premises installations. Please use 'pat' or 'envvar' authentication.");
-      }
-      if (type !== "env") {
-        process.env.AZURE_TOKEN_CREDENTIALS = "dev";
-      }
-      let credential: TokenCredential = new DefaultAzureCredential(); // CodeQL [SM05138] resolved by explicitly setting AZURE_TOKEN_CREDENTIALS
-      if (tenantId) {
-        // Use Azure CLI credential if tenantId is provided for multi-tenant scenarios
-        const azureCliCredential = new AzureCliCredential({ tenantId });
-        credential = new ChainedTokenCredential(azureCliCredential, credential);
-      }
-      return async () => {
-        const result = await credential.getToken(scopes);
-        if (!result) {
-          throw new Error("Failed to obtain Azure DevOps token. Ensure you have Azure CLI logged or use interactive type of authentication.");
-        }
-        return result.token;
-      };
-
     default:
-      if (isOnPremises) {
-        throw new Error("Interactive OAuth authentication is not supported for on-premises installations. Please use 'pat' or 'envvar' authentication.");
-      }
-      const authenticator = new OAuthAuthenticator(tenantId);
-      return () => {
-        return authenticator.getToken();
-      };
+      throw new Error(`Unknown authentication type: ${type}. Supported types are 'pat', 'envvar', and 'ntlm'.`);
   }
 }
+
 export { createAuthenticator };

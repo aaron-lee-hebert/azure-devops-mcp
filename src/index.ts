@@ -5,35 +5,34 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { getBearerHandler, WebApi } from "azure-devops-node-api";
+import { getBasicHandler, WebApi } from "azure-devops-node-api";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
 import { createAuthenticator } from "./auth.js";
-import { getOrgTenant } from "./org-tenants.js";
 //import { configurePrompts } from "./prompts.js";
 import { configureAllTools } from "./tools.js";
 import { UserAgentComposer } from "./useragent.js";
 import { packageVersion } from "./version.js";
 import { DomainsManager } from "./shared/domains.js";
 
-function isGitHubCodespaceEnv(): boolean {
-  return process.env.CODESPACES === "true" && !!process.env.CODESPACE_NAME;
-}
-
-const defaultAuthenticationType = isGitHubCodespaceEnv() ? "azcli" : "interactive";
-
 // Parse command line arguments using yargs
 const argv = yargs(hideBin(process.argv))
   .scriptName("mcp-server-azuredevops")
-  .usage("Usage: $0 <organization> [options]")
+  .usage("Usage: $0 <collection> --server-url <url> [options]")
   .version(packageVersion)
-  .command("$0 <organization> [options]", "Azure DevOps MCP Server", (yargs) => {
-    yargs.positional("organization", {
-      describe: "Azure DevOps organization name (or collection name for on-premises)",
+  .command("$0 <collection> [options]", "Azure DevOps Server MCP Server", (yargs) => {
+    yargs.positional("collection", {
+      describe: "Azure DevOps Server collection name (e.g., 'DefaultCollection')",
       type: "string",
       demandOption: true,
     });
+  })
+  .option("server-url", {
+    alias: "s",
+    describe: "Azure DevOps Server URL",
+    type: "string",
+    demandOption: true,
   })
   .option("domains", {
     alias: "d",
@@ -46,37 +45,35 @@ const argv = yargs(hideBin(process.argv))
     alias: "a",
     describe: "Type of authentication to use",
     type: "string",
-    choices: ["interactive", "azcli", "env", "envvar", "pat"],
-    default: defaultAuthenticationType,
+    choices: ["pat", "envvar", "ntlm"],
+    default: "pat",
   })
-  .option("tenant", {
-    alias: "t",
-    describe: "Azure tenant ID (optional, applied when using 'interactive' and 'azcli' type of authentication)",
-    type: "string",
-  })
-  .option("server-url", {
-    alias: "s",
-    describe: "Custom Azure DevOps Server URL (for on-premises installations, e.g., 'https://tfs.example.com:8080/tfs')",
+  .option("pat", {
+    alias: "p",
+    describe: "Personal Access Token (alternative to environment variable)",
     type: "string",
   })
   .help()
   .parseSync();
 
-export const orgName = argv.organization as string;
+export const collectionName = argv.collection as string;
+// Keep orgName export for backward compatibility with tools
+export const orgName = collectionName;
 
-// Determine if this is an on-premises installation
-const isOnPremises = !!argv["server-url"];
-
-// Build the organization URL
-const orgUrl = isOnPremises ? `${argv["server-url"]}/${orgName}` : `https://dev.azure.com/${orgName}`;
+// Build the server URL
+const serverUrl = argv["server-url"] as string;
+const orgUrl = `${serverUrl}/${collectionName}`;
 
 const domainsManager = new DomainsManager(argv.domains);
 export const enabledDomains = domainsManager.getEnabledDomains();
 
-function getAzureDevOpsClient(getAzureDevOpsToken: () => Promise<string>, userAgentComposer: UserAgentComposer): () => Promise<WebApi> {
+function getAzureDevOpsClient(
+  getAzureDevOpsToken: () => Promise<string>,
+  userAgentComposer: UserAgentComposer
+): () => Promise<WebApi> {
   return async () => {
     const accessToken = await getAzureDevOpsToken();
-    const authHandler = getBearerHandler(accessToken);
+    const authHandler = getBasicHandler("", accessToken);
     const connection = new WebApi(orgUrl, authHandler, undefined, {
       productName: "AzureDevOps.MCP",
       productVersion: packageVersion,
@@ -102,9 +99,7 @@ async function main() {
     userAgentComposer.appendMcpClientInfo(server.server.getClientVersion());
   };
 
-  // Skip tenant lookup for on-premises installations
-  const tenantId = isOnPremises ? argv.tenant : ((await getOrgTenant(orgName)) ?? argv.tenant);
-  const authenticator = createAuthenticator(argv.authentication, tenantId, isOnPremises);
+  const authenticator = createAuthenticator(argv.authentication, argv.pat as string | undefined);
 
   // removing prompts untill further notice
   // configurePrompts(server);
