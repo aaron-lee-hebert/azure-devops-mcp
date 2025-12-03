@@ -14,7 +14,7 @@ function createAuthenticator(type: string, cliPat?: string): () => Promise<strin
       // Personal Access Token authentication (recommended)
       // Priority: CLI argument > environment variables
       return async () => {
-        const token = cliPat || process.env["AZURE_DEVOPS_PAT"];
+        const token = cliPat || process.env["ADO_PAT"];
         if (!token) {
           throw new Error("Personal Access Token not found. Provide via --pat argument or set AZURE_DEVOPS_PAT environment variable.");
         }
